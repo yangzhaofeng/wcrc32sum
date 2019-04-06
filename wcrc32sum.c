@@ -1,8 +1,7 @@
 /*
 * The program can now work on Microsoft Windows well.
 * (c) Steven Yang (https://github.com/yangzhaofeng/wcrc32sum), 2019
-* The source is also in the PUBLIC DOMAIN.
-* I will be glad if you can notice my name when you redistribute the code.
+* The source modified is published under GNU General Public License v3.0.
 */
 
 /*
@@ -48,7 +47,7 @@ typedef wchar_t CHAR;
 #else
 typedef char CHAR;
 #define _T(x) x
-#define fwprintf fwprintf
+#define fwprintf fprintf
 #define wprintf printf
 #endif
 
@@ -74,7 +73,7 @@ unsigned int crc32_table[256];
 
 // help string
 const CHAR help[] =
-_T("Usage: %ls [OPTION] [FILE]...\n")
+_T("Usage: %s [OPTION] [FILE]...\n")
 //"   or: %s --check [OPTION] [FILE]\n"
 _T("Print CRC32 checksums of the audio data in WAV files.\n")
 //"Print or check CRC32 checksums of the audio data in WAV files.\n"
@@ -318,12 +317,12 @@ int main(int argc, CHAR** argv) {
 		}
 		if (cmode == _T('r')) {
 			wprintf(_T("WAV header info:\n"));
-			wprintf(_T("  format: %u\n", fmt.audio_format));
-			wprintf(_T("  channels: %u\n", fmt.num_channels));
-			wprintf(_T("  sample rate: %u\n", fmt.sample_rate));
-			wprintf(_T("  byte rate: %u\n", fmt.byte_rate));
-			wprintf(_T("  block align: %u\n", fmt.block_align));
-			wprintf(_T("  bits per sample: %u\n", fmt.bits_per_sample));
+			wprintf(_T("  format: %u\n"), fmt.audio_format);
+			wprintf(_T("  channels: %u\n"), fmt.num_channels);
+			wprintf(_T("  sample rate: %u\n"), fmt.sample_rate);
+			wprintf(_T("  byte rate: %u\n"), fmt.byte_rate);
+			wprintf(_T("  block align: %u\n"), fmt.block_align);
+			wprintf(_T("  bits per sample: %u\n"), fmt.bits_per_sample);
 		}
 		if (fmt.audio_format != 1) {
 			fwprintf(stderr, _T("*Not a RIFF PCM WAV file\n"));
@@ -345,7 +344,7 @@ int main(int argc, CHAR** argv) {
 			fclose(f);
 			return 2;
 		}
-		if (cmode == _T('r')) wprintf(_T("RIFF WAV header checked and audio data size is %u bytes\n", data_size));
+		if (cmode == _T('r')) wprintf(_T("RIFF WAV header checked and audio data size is %u bytes\n"), data_size);
 
 		unsigned int crc = 0xffffffff;
 		unsigned int crcc[10];
@@ -614,14 +613,14 @@ int main(int argc, CHAR** argv) {
 			crcn = crcn ^ 0xffffffff;
 			crcln = crcln ^ 0xffffffff;
 
-			wprintf(_T("Used audio data size is %u bytes\n", ts));
+			wprintf(_T("Used audio data size is %u bytes\n"), ts);
 			wprintf(_T("CRC32 sums of:\n"));
-			wprintf(_T("  all channels / all samples:     %08X (EAC: grabbing, \"no use...\" off)\n", crc));
-			//wprintf(_T("  all channels / no null blocks:  %08X (EAC: no equivalent)\n", crcnb));
-			wprintf(_T("  all channels / no null samples: %08X (EAC: grabbing, \"no use...\" on)\n", crcn));
-			wprintf(_T("  left channel / no null samples: %08X (EAC: sound editor)\n", crcln));
+			wprintf(_T("  all channels / all samples:     %08X (EAC: grabbing, \"no use...\" off)\n"), crc);
+			//wprintf(_T("  all channels / no null blocks:  %08X (EAC: no equivalent)\n"), crcnb);
+			wprintf(_T("  all channels / no null samples: %08X (EAC: grabbing, \"no use...\" on)\n"), crcn);
+			wprintf(_T("  left channel / no null samples: %08X (EAC: sound editor)\n"), crcln);
 
-			wprintf(_T("Time elapsed: %u ms\n", (unsigned int)((clock() - clks) * 1000 / CLOCKS_PER_SEC)));
+			wprintf(_T("Time elapsed: %u ms\n"), (unsigned int)((clock() - clks) * 1000 / CLOCKS_PER_SEC));
 			wprintf(_T("----------------\n"));
 		}
 		free(buffer);
