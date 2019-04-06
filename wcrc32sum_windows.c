@@ -118,6 +118,7 @@ int wmain(int argc, wchar_t** argv) {
 	_setmode(_fileno(stdin), _O_BINARY);
 	//_setmode(_fileno(stdout), _O_BINARY);
 	//_setmode(_fileno(stderr), _O_BINARY);
+	_setmode(_fileno(stdout), _O_U16TEXT);
 #endif
 	init_crc32_table();
 	wchar_t cmode = L'b';
@@ -189,7 +190,7 @@ int wmain(int argc, wchar_t** argv) {
 					return 0;
 				}
 				else {
-					fprintf(stderr, "*Unknown option: %ls\n", arg);
+					fwprintf(stderr, L"*Unknown option: %ls\n", arg);
 					return 1;
 				}
 				continue;
@@ -227,7 +228,7 @@ int wmain(int argc, wchar_t** argv) {
 				}
 				else if (wcscmp(L"-r", arg) == 0) cmode = L'r';
 				else {
-					fprintf(stderr, "*Unknown option: %ls\n", arg);
+					fwprintf(stderr, L"*Unknown option: %ls\n", arg);
 					return 1;
 				}
 				continue;
@@ -238,10 +239,10 @@ int wmain(int argc, wchar_t** argv) {
 			}
 		}
 		if (!f) {
-			fprintf(stderr, "*Can not open file: %ls\n", arg);
+			fwprintf(stderr, L"*Can not open file: %ls\n", arg);
 			return 2;
 		}
-		if (cmode == L'r') printf("File: %ls\n", arg);
+		if (cmode == L'r') wprintf(L"File: %ls\n", arg);
 
 		// check RIFF WAV header
 		unsigned int rn = 0;
@@ -369,7 +370,7 @@ int wmain(int argc, wchar_t** argv) {
 					}
 				}
 				crc = crc ^ 0xffffffff;
-				printf("%08X ** %ls\n", crc, arg);
+				wprintf(L"%08X ** %ls\n", crc, arg);
 			}
 			else {
 				if (data_size > 0) {
@@ -414,7 +415,7 @@ int wmain(int argc, wchar_t** argv) {
 					}
 				}
 				crc = crc ^ 0xffffffff;
-				printf("%08X *+ %ls\n", crc, arg);
+				wprintf(L"%08X *+ %ls\n", crc, arg);
 			}
 		}
 		else if (cmode == L'c') {
@@ -458,7 +459,7 @@ int wmain(int argc, wchar_t** argv) {
 				}
 				for (unsigned int c = 0; c < nch; c++) {
 					crcc[c] = crcc[c] ^ 0xffffffff;
-					if (nch < 10 && cflag[c]) printf("%08X %01u* %ls\n", crcc[c], c, arg);
+					if (nch < 10 && cflag[c]) wprintf(L"%08X %01u* %ls\n", crcc[c], c, arg);
 				}
 			}
 			else {
@@ -508,7 +509,7 @@ int wmain(int argc, wchar_t** argv) {
 				}
 				for (unsigned int c = 0; c < 10; c++) {
 					crcc[c] = crcc[c] ^ 0xffffffff;
-					if (nch < 10 && cflag[c]) printf("%08X %01u+ %ls\n", crcc[c], c, arg);
+					if (nch < 10 && cflag[c]) wprintf(L"%08X %01u+ %ls\n", crcc[c], c, arg);
 				}
 			}
 		}
