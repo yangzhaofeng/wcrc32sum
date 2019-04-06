@@ -1,4 +1,11 @@
 /*
+ * The program can now work on Microsoft Windows well.
+ * (c) Steven Yang (https://github.com/yangzhaofeng/wcrc32sum), 2019
+ * The source is also in the PUBLIC DOMAIN.
+ * I will be glad if you can notice my name when you redistribute the code.
+ */
+
+/*
 wcrc32sum.c
 The program computes CRC32 ckecksums of the PCM audio data in RIFF WAV files,
 using various methods.
@@ -82,7 +89,7 @@ const char help[] =
 //"a line with checksum, a character indicating type (`*' for binary, ` ' for\n"
 //"text), and name for each FILE.\n"
 ;
-const char ver[] = "0.5.0";
+const char ver[] = "0.6.0";
 
 // initialize the CRC table
 void init_crc32_table(void) {
