@@ -1,8 +1,7 @@
 /*
 * The program can now work on Microsoft Windows well.
 * (c) Steven Yang (https://github.com/yangzhaofeng/wcrc32sum), 2019
-* The source is also in the PUBLIC DOMAIN.
-* I will be glad if you can notice my name when you redistribute the code.
+* The source modified is published under GNU General Public License v3.0.
 */
 
 /*
