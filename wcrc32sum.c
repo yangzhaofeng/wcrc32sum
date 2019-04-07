@@ -36,19 +36,24 @@ mailto:dmvn@mccme.ru
 #ifdef _WIN32
 #include <io.h>
 #include <fcntl.h>
-//#include <tchar.h>
+#ifndef _UNICODE
+#define _UNICODE
+#endif
+#endif
+#ifdef _UNICODE
+#include <tchar.h>
 #define _T(x)      L ## x
 #define main(a,b) wmain(a,b)
 #define strcmp(a,b) wcscmp(a,b)
 #define strncmp(a,b,c) wcsncmp(a,b,c)
 #define strlen(a) wcslen(a)
 #define fopen(a,b) _wfopen(a,b)
+#define fprintf fwprintf
+#define printf wprintf
 typedef wchar_t CHAR;
 #else
 typedef char CHAR;
 #define _T(x) x
-#define fwprintf fprintf
-#define wprintf printf
 #endif
 
 #define SAMPLE_BUFFER_SIZE 1024*4
@@ -101,7 +106,7 @@ _T("using various methods.\n")
 //"a line with checksum, a character indicating type (`*' for binary, ` ' for\n"
 //"text), and name for each FILE.\n"
 ;
-const CHAR ver[] = _T("0.6.1");
+const CHAR ver[] = _T("0.6.2");
 
 // initialize the CRC table
 void init_crc32_table(void) {
@@ -181,11 +186,11 @@ int main(int argc, CHAR** argv) {
 						else {
 							CHAR c = *arg - _T('0');
 							if (c >= 0 && c < 10) cflag[c] = 1;
-							else fwprintf(stderr, _T("*Bad channel option\n"));
+							else fprintf(stderr, _T("*Bad channel option\n"));
 						}
 						cmode = _T('c');
 					}
-					else fwprintf(stderr, _T("*Bad channel option\n"));
+					else fprintf(stderr, _T("*Bad channel option\n"));
 				}
 				else if (strcmp(_T("--all"), arg) == 0) {
 					smode = _T('a');
@@ -201,15 +206,18 @@ int main(int argc, CHAR** argv) {
 				}
 				else if (strcmp(_T("--report"), arg) == 0) cmode = _T('r');
 				else if (strcmp(_T("--help"), arg) == 0) {
-					wprintf(help, argv[0]);
+					printf(help, argv[0]);
 					return 0;
 				}
 				else if (strcmp(_T("--version"), arg) == 0) {
-					wprintf(ver);
+					printf(ver);
+					#ifndef _WIN32
+					printf("\n");
+					#endif 
 					return 0;
 				}
 				else {
-					fwprintf(stderr, _T("*Unknown option: %s\n"), arg);
+					fprintf(stderr, _T("*Unknown option: %s\n"), arg);
 					return 1;
 				}
 				continue;
@@ -227,11 +235,11 @@ int main(int argc, CHAR** argv) {
 						else {
 							CHAR c = *arg - _T('0');
 							if (c >= 0 && c < 10) cflag[c] = 1;
-							else fwprintf(stderr, _T("*Bad channel option\n"));
+							else fprintf(stderr, _T("*Bad channel option\n"));
 						}
 						cmode = _T('c');
 					}
-					else fwprintf(stderr, _T("*Bad channel option\n"));
+					else fprintf(stderr, _T("*Bad channel option\n"));
 				}
 				else if (strcmp(_T("-a"), arg) == 0) {
 					smode = _T('a');
@@ -247,7 +255,7 @@ int main(int argc, CHAR** argv) {
 				}
 				else if (strcmp(_T("-r"), arg) == 0) cmode = _T('r');
 				else {
-					fwprintf(stderr, _T("*Unknown option: %s\n"), arg);
+					fprintf(stderr, _T("*Unknown option: %s\n"), arg);
 					return 1;
 				}
 				continue;
@@ -258,10 +266,10 @@ int main(int argc, CHAR** argv) {
 			}
 		}
 		if (!f) {
-			fwprintf(stderr, _T("*Can not open file: %s\n"), arg);
+			fprintf(stderr, _T("*Can not open file: %s\n"), arg);
 			return 2;
 		}
-		if (cmode == _T('r')) wprintf(_T("File: %s\n"), arg);
+		if (cmode == _T('r')) printf(_T("File: %s\n"), arg);
 
 		// check RIFF WAV header
 		unsigned int rn = 0;
@@ -271,80 +279,80 @@ int main(int argc, CHAR** argv) {
 
 		rn = fread(&code, 1, 4, f); // chunk ID, "RIFF"
 		if (rn != 4 || code != 0x46464952) {
-			fwprintf(stderr, _T("*Not a RIFF file\n"));
+			fprintf(stderr, _T("*Not a RIFF file\n"));
 			return 2;
 		}
 		rn = fread(&code, 1, 4, f); // chunk size
 		if (rn != 4) {
-			fwprintf(stderr, _T("*Corrupted file\n"));
+			fprintf(stderr, _T("*Corrupted file\n"));
 			return 2;
 		}
 		rn = fread(&code, 1, 4, f); // format, "WAVE"
 		if (rn != 4 || code != 0x45564157) {
-			fwprintf(stderr, _T("*Not a RIFF WAV file\n"));
+			fprintf(stderr, _T("*Not a RIFF WAV file\n"));
 			return 2;
 		}
 		rn = fread(&code, 1, 4, f); // subchunk ID, "fmt "
 		if (rn != 4 || code != 0x20746d66) {
-			fwprintf(stderr, _T("*Missing WAV format chunk\n"));
+			fprintf(stderr, _T("*Missing WAV format chunk\n"));
 			return 2;
 		}
 		rn = fread(&code, 1, 4, f); // subchunk size, 16 for PCM, no extra params
 		if (rn != 4 || code != 0x10) {
-			fwprintf(stderr, _T("*Bad WAV format chunk size\n"));
+			fprintf(stderr, _T("*Bad WAV format chunk size\n"));
 			return 2;
 		}
 
 		rn = fread(&fmt, 1, 16, f); // format info
 		if (rn != 16) {
-			fwprintf(stderr, _T("*Corrupted file\n"));
+			fprintf(stderr, _T("*Corrupted file\n"));
 			return 2;
 		}
 		unsigned short bal = fmt.block_align;
 		unsigned short bps = fmt.bits_per_sample / 8; // BYTEs per sample
 		unsigned short nch = fmt.num_channels;
 		if (fmt.bits_per_sample % 8 != 0) {
-			fwprintf(stderr, _T("*Bits per sample not multiple of 8\n"));
+			fprintf(stderr, _T("*Bits per sample not multiple of 8\n"));
 			return 2;
 		}
 		if (bal != bps * nch) {
-			fwprintf(stderr, _T("*Inconsistent WAV format\n"));
+			fprintf(stderr, _T("*Inconsistent WAV format\n"));
 			return 2;
 		}
 		if (fmt.byte_rate != fmt.sample_rate * bal) {
-			fwprintf(stderr, _T("*Inconsistent WAV format\n"));
+			fprintf(stderr, _T("*Inconsistent WAV format\n"));
 			return 2;
 		}
 		if (cmode == _T('r')) {
-			wprintf(_T("WAV header info:\n"));
-			wprintf(_T("  format: %u\n"), fmt.audio_format);
-			wprintf(_T("  channels: %u\n"), fmt.num_channels);
-			wprintf(_T("  sample rate: %u\n"), fmt.sample_rate);
-			wprintf(_T("  byte rate: %u\n"), fmt.byte_rate);
-			wprintf(_T("  block align: %u\n"), fmt.block_align);
-			wprintf(_T("  bits per sample: %u\n"), fmt.bits_per_sample);
+			printf(_T("WAV header info:\n"));
+			printf(_T("  format: %u\n"), fmt.audio_format);
+			printf(_T("  channels: %u\n"), fmt.num_channels);
+			printf(_T("  sample rate: %u\n"), fmt.sample_rate);
+			printf(_T("  byte rate: %u\n"), fmt.byte_rate);
+			printf(_T("  block align: %u\n"), fmt.block_align);
+			printf(_T("  bits per sample: %u\n"), fmt.bits_per_sample);
 		}
 		if (fmt.audio_format != 1) {
-			fwprintf(stderr, _T("*Not a RIFF PCM WAV file\n"));
+			fprintf(stderr, _T("*Not a RIFF PCM WAV file\n"));
 			return 2;
 		}
 
 		rn = fread(&code, 1, 4, f); // subchunk ID, "data"
 		if (rn != 4 || code != 0x61746164) {
-			fwprintf(stderr, _T("*Missing WAV data chunk\n"));
+			fprintf(stderr, _T("*Missing WAV data chunk\n"));
 			return 2;
 		}
 		rn = fread(&data_size, 1, 4, f); // chunk size
 		if (rn != 4) {
-			fwprintf(stderr, _T("*Corrupted file\n"));
+			fprintf(stderr, _T("*Corrupted file\n"));
 			return 2;
 		}
 		if (data_size % bal != 0) {
-			fwprintf(stderr, _T("*Data not aligned\n"));
+			fprintf(stderr, _T("*Data not aligned\n"));
 			fclose(f);
 			return 2;
 		}
-		if (cmode == _T('r')) wprintf(_T("RIFF WAV header checked and audio data size is %u bytes\n"), data_size);
+		if (cmode == _T('r')) printf(_T("RIFF WAV header checked and audio data size is %u bytes\n"), data_size);
 
 		unsigned int crc = 0xffffffff;
 		unsigned int crcc[10];
@@ -365,14 +373,14 @@ int main(int argc, CHAR** argv) {
 						if (data_size == 0) {
 							rs = 0;
 							if (frs % bal != 0) {
-								fwprintf(stderr, _T("*Data not aligned"));
+								fprintf(stderr, _T("*Data not aligned"));
 								free(buffer);
 								fclose(f);
 								return 2;
 							}
 						}
 						else {
-							fwprintf(stderr, _T("*Corrupted file"));
+							fprintf(stderr, _T("*Corrupted file"));
 							free(buffer);
 							fclose(f);
 							return 2;
@@ -389,7 +397,7 @@ int main(int argc, CHAR** argv) {
 					}
 				}
 				crc = crc ^ 0xffffffff;
-				wprintf(_T("%08X ** %s\n"), crc, arg);
+				printf(_T("%08X ** %s\n"), crc, arg);
 			}
 			else {
 				if (data_size > 0) {
@@ -401,14 +409,14 @@ int main(int argc, CHAR** argv) {
 						if (data_size == 0) {
 							rs = 0;
 							if (frs % bal != 0) {
-								fwprintf(stderr, _T("*Data not aligned"));
+								fprintf(stderr, _T("*Data not aligned"));
 								free(buffer);
 								fclose(f);
 								return 2;
 							}
 						}
 						else {
-							fwprintf(stderr, _T("*Corrupted file"));
+							fprintf(stderr, _T("*Corrupted file"));
 							free(buffer);
 							fclose(f);
 							return 2;
@@ -434,7 +442,7 @@ int main(int argc, CHAR** argv) {
 					}
 				}
 				crc = crc ^ 0xffffffff;
-				wprintf(_T("%08X *+ %s\n"), crc, arg);
+				printf(_T("%08X *+ %s\n"), crc, arg);
 			}
 		}
 		else if (cmode == _T('c')) {
@@ -448,14 +456,14 @@ int main(int argc, CHAR** argv) {
 						if (data_size == 0) {
 							rs = 0;
 							if (frs % bal != 0) {
-								fwprintf(stderr, _T("*Data not aligned"));
+								fprintf(stderr, _T("*Data not aligned"));
 								free(buffer);
 								fclose(f);
 								return 2;
 							}
 						}
 						else {
-							fwprintf(stderr, _T("*Corrupted file"));
+							fprintf(stderr, _T("*Corrupted file"));
 							free(buffer);
 							fclose(f);
 							return 2;
@@ -478,7 +486,7 @@ int main(int argc, CHAR** argv) {
 				}
 				for (unsigned int c = 0; c < nch; c++) {
 					crcc[c] = crcc[c] ^ 0xffffffff;
-					if (nch < 10 && cflag[c]) wprintf(_T("%08X %01u* %s\n"), crcc[c], c, arg);
+					if (nch < 10 && cflag[c]) printf(_T("%08X %01u* %s\n"), crcc[c], c, arg);
 				}
 			}
 			else {
@@ -491,14 +499,14 @@ int main(int argc, CHAR** argv) {
 						if (data_size == 0) {
 							rs = 0;
 							if (frs % bal != 0) {
-								fwprintf(stderr, _T("*Data not aligned"));
+								fprintf(stderr, _T("*Data not aligned"));
 								free(buffer);
 								fclose(f);
 								return 2;
 							}
 						}
 						else {
-							fwprintf(stderr, _T("*Corrupted file"));
+							fprintf(stderr, _T("*Corrupted file"));
 							free(buffer);
 							fclose(f);
 							return 2;
@@ -528,7 +536,7 @@ int main(int argc, CHAR** argv) {
 				}
 				for (unsigned int c = 0; c < 10; c++) {
 					crcc[c] = crcc[c] ^ 0xffffffff;
-					if (nch < 10 && cflag[c]) wprintf(_T("%08X %01u+ %s\n"), crcc[c], c, arg);
+					if (nch < 10 && cflag[c]) printf(_T("%08X %01u+ %s\n"), crcc[c], c, arg);
 				}
 			}
 		}
@@ -549,14 +557,14 @@ int main(int argc, CHAR** argv) {
 					if (data_size == 0) {
 						rs = 0;
 						if (frs % bal != 0) {
-							fwprintf(stderr, _T("*Data not aligned"));
+							fprintf(stderr, _T("*Data not aligned"));
 							free(buffer);
 							fclose(f);
 							return 2;
 						}
 					}
 					else {
-						fwprintf(stderr, _T("*Corrupted file"));
+						fprintf(stderr, _T("*Corrupted file"));
 						free(buffer);
 						fclose(f);
 						return 2;
@@ -613,15 +621,15 @@ int main(int argc, CHAR** argv) {
 			crcn = crcn ^ 0xffffffff;
 			crcln = crcln ^ 0xffffffff;
 
-			wprintf(_T("Used audio data size is %u bytes\n"), ts);
-			wprintf(_T("CRC32 sums of:\n"));
-			wprintf(_T("  all channels / all samples:     %08X (EAC: grabbing, \"no use...\" off)\n"), crc);
-			//wprintf(_T("  all channels / no null blocks:  %08X (EAC: no equivalent)\n"), crcnb);
-			wprintf(_T("  all channels / no null samples: %08X (EAC: grabbing, \"no use...\" on)\n"), crcn);
-			wprintf(_T("  left channel / no null samples: %08X (EAC: sound editor)\n"), crcln);
+			printf(_T("Used audio data size is %u bytes\n"), ts);
+			printf(_T("CRC32 sums of:\n"));
+			printf(_T("  all channels / all samples:     %08X (EAC: grabbing, \"no use...\" off)\n"), crc);
+			//printf(_T("  all channels / no null blocks:  %08X (EAC: no equivalent)\n"), crcnb);
+			printf(_T("  all channels / no null samples: %08X (EAC: grabbing, \"no use...\" on)\n"), crcn);
+			printf(_T("  left channel / no null samples: %08X (EAC: sound editor)\n"), crcln);
 
-			wprintf(_T("Time elapsed: %u ms\n"), (unsigned int)((clock() - clks) * 1000 / CLOCKS_PER_SEC));
-			wprintf(_T("----------------\n"));
+			printf(_T("Time elapsed: %u ms\n"), (unsigned int)((clock() - clks) * 1000 / CLOCKS_PER_SEC));
+			printf(_T("----------------\n"));
 		}
 		free(buffer);
 		fclose(f);
